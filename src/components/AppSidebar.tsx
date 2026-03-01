@@ -12,10 +12,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { useRole } from "@/context/RoleContext";
-import { ShoppingCart, LayoutDashboard, FileText, Settings, Cake, UserCog } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { ShoppingCart, LayoutDashboard, FileText, Settings, Cake, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const adminItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -31,7 +30,7 @@ const vendorItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { role, setRole } = useRole();
+  const { role, fullName, signOut } = useAuth();
   const items = role === "admin" ? adminItems : vendorItems;
 
   return (
@@ -81,17 +80,20 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4">
         {!collapsed && (
-          <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent/50 p-3">
-            <UserCog className="h-4 w-4 text-muted-foreground" />
-            <Label htmlFor="role-switch" className="text-xs text-muted-foreground flex-1">
-              {role === "admin" ? "Admin" : "Vendedor"}
-            </Label>
-            <Switch
-              id="role-switch"
-              checked={role === "admin"}
-              onCheckedChange={(checked) => setRole(checked ? "admin" : "vendor")}
-              className="scale-75"
-            />
+          <div className="space-y-3">
+            <div className="rounded-lg bg-sidebar-accent/50 p-3">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{fullName || "Usuario"}</p>
+              <p className="text-xs text-muted-foreground capitalize">{role || "..."}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+              onClick={signOut}
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </Button>
           </div>
         )}
       </SidebarFooter>
