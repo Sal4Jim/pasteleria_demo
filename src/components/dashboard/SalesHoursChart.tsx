@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { OrderWithItems } from "@/hooks/useOrders";
+import type { OrderWithItems } from "@/types/orders";
 
 interface Props {
   orders: OrderWithItems[];
