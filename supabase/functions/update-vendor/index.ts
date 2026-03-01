@@ -48,63 +48,57 @@ Deno.serve(async (req) => {
       .eq("role", "admin");
 
     if (!roles || roles.length === 0) {
-      return new Response(JSON.stringify({ error: "Solo administradores pueden crear vendedores" }), {
+      return new Response(JSON.stringify({ error: "Solo administradores pueden actualizar vendedores" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const reqBody = await req.json();
-    let email = reqBody.email;
-    const password = reqBody.password;
-    let full_name = reqBody.full_name;
+    const { user_id, password, full_name } = await req.json();
 
-    if (!email || !password || !full_name) {
-      return new Response(JSON.stringify({ error: "Email, contraseña y nombre son requeridos" }), {
+    if (!user_id || !full_name) {
+      return new Response(JSON.stringify({ error: "ID de usuario y nombre son requeridos" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    email = email.trim();
-    full_name = full_name.trim();
-
-    if (password.length < 6) {
-      return new Response(JSON.stringify({ error: "La contraseña debe tener al menos 6 caracteres" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Create user with admin API
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+    // Update user auth metadata
+    const userUpdates: Record<string, unknown> = {
       user_metadata: { full_name },
-    });
+    };
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+    if (password) {
+      userUpdates.password = password;
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      user_id,
+      userUpdates
+    );
+
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Assign vendor role
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newUser.user.id, role: "vendor" });
+    // Update profiles table manually
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ full_name })
+      .eq("user_id", user_id);
 
-    if (roleError) {
-      return new Response(JSON.stringify({ error: roleError.message }), {
+    if (profileError) {
+      return new Response(JSON.stringify({ error: profileError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUser.user.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: Error | unknown) {

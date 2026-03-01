@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllProducts, createProduct, updateProduct } from "@/services/productsService";
 import { Product } from "@/types/products";
@@ -50,7 +50,7 @@ export default function ProductsAdminPage() {
   });
 
   // Calculate Top Products
-  const topProducts = (() => {
+  const topProducts = React.useMemo(() => {
     const counts: Record<string, { name: string; qty: number; total: number }> = {};
     orders.forEach((order) => {
       order.items.forEach((item) => {
@@ -64,7 +64,7 @@ export default function ProductsAdminPage() {
     return Object.values(counts)
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5); // Top 5
-  })();
+  }, [orders]);
 
   const createMutation = useMutation({
     mutationFn: (newProduct: Omit<Product, "id" | "created_at">) => createProduct(newProduct),
@@ -109,8 +109,9 @@ export default function ProductsAdminPage() {
     });
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = React.useMemo(() => 
+    products.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase())),
+    [products, searchTerm]
   );
 
   return (

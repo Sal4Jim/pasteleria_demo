@@ -71,7 +71,7 @@ export function Cart({ items, subtotal, tax, total, onUpdateQuantity, onClear, o
           <span>S/ {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm text-muted-foreground">
-          <span>IGV (18%)</span>
+          <span>IGV (18% incl.)</span>
           <span>S/ {tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold text-foreground pt-2 border-t border-border">

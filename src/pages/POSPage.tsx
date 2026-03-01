@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { type Product, type CartItem } from "@/types/products";
 import { useProducts } from "@/hooks/useProducts";
 import { createOrder } from "@/services/ordersService";
@@ -15,7 +15,7 @@ const POSPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -25,9 +25,9 @@ const POSPage = () => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
-  };
+  }, []);
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = useCallback((id: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) =>
@@ -35,18 +35,23 @@ const POSPage = () => {
         )
         .filter((item) => item.quantity > 0)
     );
-  };
+  }, []);
 
-  const clearCart = () => setCart([]);
+  const clearCart = useCallback(() => setCart([]), []);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.18;
-  const total = subtotal + tax;
+  const { total, subtotal, tax } = React.useMemo(() => {
+    const t = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const s = t / 1.18;
+    return { total: t, subtotal: s, tax: t - s };
+  }, [cart]);
 
-  const filteredProducts =
-    selectedCategory === "all"
-      ? products
-      : products.filter((p) => p.category === selectedCategory);
+  const filteredProducts = React.useMemo(
+    () =>
+      selectedCategory === "all"
+        ? products
+        : products.filter((p) => p.category === selectedCategory),
+    [selectedCategory, products]
+  );
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
