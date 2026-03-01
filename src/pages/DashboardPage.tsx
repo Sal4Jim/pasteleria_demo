@@ -1,15 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { sampleOrders } from "@/data/bakeryData";
 import { DollarSign, ShoppingCart, TrendingUp, Users } from "lucide-react";
 import { TopProductsChart } from "@/components/dashboard/TopProductsChart";
 import { SalesHoursChart } from "@/components/dashboard/SalesHoursChart";
 import { VendorPerformanceChart } from "@/components/dashboard/VendorPerformanceChart";
+import { useTodayOrders } from "@/hooks/useOrders";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DashboardPage = () => {
-  const totalSales = sampleOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalOrders = sampleOrders.length;
-  const avgOrder = totalSales / totalOrders;
-  const uniqueVendors = new Set(sampleOrders.map((o) => o.vendor)).size;
+  const { data: orders, isLoading } = useTodayOrders();
+
+  const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalOrders = orders.length;
+  const avgOrder = totalOrders > 0 ? totalSales / totalOrders : 0;
+  const uniqueVendors = new Set(orders.map((o) => o.vendor_id)).size;
 
   const metrics = [
     { title: "Ventas del Día", value: `S/ ${totalSales.toFixed(2)}`, icon: DollarSign, color: "text-primary" },
@@ -33,18 +36,18 @@ const DashboardPage = () => {
               <m.icon className={`h-5 w-5 ${m.color}`} />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{m.value}</p>
+              {isLoading ? <Skeleton className="h-8 w-24" /> : <p className="text-2xl font-bold">{m.value}</p>}
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopProductsChart />
-        <SalesHoursChart />
+        <TopProductsChart orders={orders} isLoading={isLoading} />
+        <SalesHoursChart orders={orders} isLoading={isLoading} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VendorPerformanceChart />
+        <VendorPerformanceChart orders={orders} isLoading={isLoading} />
       </div>
     </div>
   );
