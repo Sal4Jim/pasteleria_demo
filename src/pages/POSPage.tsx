@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { products, type Product, type CartItem } from "@/data/bakeryData";
+import { type Product, type CartItem } from "@/types/products";
+import { useProducts } from "@/hooks/useProducts";
+import { createOrder } from "@/services/ordersService";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { Cart } from "@/components/pos/Cart";
 import { CheckoutModal } from "@/components/pos/CheckoutModal";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const POSPage = () => {
+  const { user } = useAuth();
+  const { data: products = [], isLoading } = useProducts();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -69,7 +75,17 @@ const POSPage = () => {
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         total={total}
-        onConfirm={() => {
+        onConfirm={async (paymentMethod, invoice) => {
+          if (!user) return;
+          await createOrder(
+            user.id,
+            cart,
+            subtotal,
+            tax,
+            total,
+            paymentMethod,
+            invoice
+          );
           clearCart();
           setCheckoutOpen(false);
         }}

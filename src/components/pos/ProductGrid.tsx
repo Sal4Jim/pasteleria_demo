@@ -1,4 +1,4 @@
-import { type Product } from "@/data/bakeryData";
+import { type Product } from "@/types/products";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,7 @@ export function ProductGrid({ products, selectedCategory, onCategoryChange, onAd
             className="group flex flex-col items-center p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-200 cursor-pointer text-left"
           >
             <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-200">
-              {product.image}
+              {product.emoji || "🍞"}
             </div>
             <span className="text-sm font-medium text-card-foreground text-center leading-tight">
               {product.name}
