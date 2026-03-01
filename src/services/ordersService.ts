@@ -32,9 +32,9 @@ export async function fetchOrders(): Promise<OrderWithItems[]> {
     payment_method: o.payment_method,
     invoice: o.invoice,
     created_at: o.created_at,
-    items: (o.order_items || []).map((i: any) => ({
-      product_name: i.product_name,
-      quantity: i.quantity,
+    items: (o.order_items || []).map((i: Record<string, unknown>) => ({
+      product_name: String(i.product_name),
+      quantity: Number(i.quantity),
       unit_price: Number(i.unit_price),
       total_price: Number(i.total_price),
     })),

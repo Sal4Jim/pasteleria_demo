@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import POSPage from "./pages/POSPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProductsAdminPage from "./pages/ProductsAdminPage";
 import LoginPage from "./pages/LoginPage";
 import SetupAdminPage from "./pages/SetupAdminPage";
 import NotFound from "./pages/NotFoundPage";
@@ -71,6 +72,10 @@ function AppRoutes() {
         <Route
           path="/reports"
           element={role === "admin" ? <ReportsPage /> : <Navigate to="/pos" replace />}
+        />
+        <Route
+          path="/products"
+          element={role === "admin" ? <ProductsAdminPage /> : <Navigate to="/pos" replace />}
         />
         <Route
           path="/settings"
