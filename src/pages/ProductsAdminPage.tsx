@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllProducts, createProduct, updateProduct } from "@/services/productsService";
+import { fetchCategories, createCategory } from "@/services/categoriesService";
 import { Product } from "@/types/products";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,13 +28,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchOrders } from "@/services/ordersService";
 
-const categories = [
-  { id: "cakes", label: "Tortas" },
-  { id: "cupcakes", label: "Cupcakes" },
-  { id: "beverages", label: "Bebidas" },
-  { id: "custom", label: "Personalizado" },
-];
-
 export default function ProductsAdminPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,9 +39,22 @@ export default function ProductsAdminPage() {
   const [category, setCategory] = useState("cakes");
   const [emoji, setEmoji] = useState("🎂");
 
-  // Edit stock state
+  // New category state
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState("");
+
+  // Edit product state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editCategory, setEditCategory] = useState("");
   const [editStockValue, setEditStockValue] = useState("");
+
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
 
   // Fetch all products
   const { data: products = [], isLoading } = useQuery({
@@ -107,16 +114,32 @@ export default function ProductsAdminPage() {
     },
   });
 
-  const updateStockMutation = useMutation({
-    mutationFn: ({ id, stock }: { id: string; stock: number }) => updateProduct(id, { stock }),
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) => updateProduct(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Stock actualizado exitosamente");
+      toast.success("Producto actualizado");
       setSelectedProduct(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Error al actualizar stock");
+      toast.error(err.message || "Error al actualizar");
+    },
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (label: string) => {
+      const slug = label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      return createCategory(slug, label);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Categoría creada");
+      setNewCategoryLabel("");
+      setIsCategoryDialogOpen(false);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Error al crear categoría");
     },
   });
 
@@ -136,11 +159,21 @@ export default function ProductsAdminPage() {
     });
   };
 
-  const handleUpdateStock = () => {
-    if (!selectedProduct || !editStockValue || isNaN(Number(editStockValue))) return;
-    updateStockMutation.mutate({
+  const handleCreateCategory = () => {
+    if (!newCategoryLabel) return;
+    createCategoryMutation.mutate(newCategoryLabel);
+  };
+
+  const handleUpdateProduct = () => {
+    if (!selectedProduct || !editName || !editPrice || !editCategory) return;
+    updateProductMutation.mutate({
       id: selectedProduct.id,
-      stock: Number(editStockValue),
+      updates: {
+        name: editName,
+        price: Number(editPrice),
+        category: editCategory,
+        stock: Number(editStockValue) || 0,
+      }
     });
   };
 
@@ -230,14 +263,26 @@ export default function ProductsAdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Categoría</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Categoría</Label>
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    size="sm" 
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setIsCategoryDialogOpen(true)}
+                  >
+                    + Nueva Categoría
+                  </Button>
+                </div>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
+                  <option value="" disabled>Seleccione...</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.slug} value={c.slug}>
                       {c.label}
                     </option>
                   ))}
@@ -306,7 +351,7 @@ export default function ProductsAdminPage() {
                       <TableCell className="text-xl text-center">{product.emoji || "🍞"}</TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell className="capitalize text-muted-foreground">
-                        {categories.find((c) => c.id === product.category)?.label || product.category}
+                        {categories.find((c) => c.slug === product.category)?.label || product.category}
                       </TableCell>
                       <TableCell className="text-right">S/ {product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
@@ -329,7 +374,10 @@ export default function ProductsAdminPage() {
                           size="icon"
                           onClick={() => {
                             setSelectedProduct(product);
+                            setEditName(product.name);
+                            setEditPrice(product.price.toString());
                             setEditStockValue(product.stock.toString());
+                            setEditCategory(product.category);
                           }}
                         >
                           <Edit2 className="h-4 w-4 text-primary" />
@@ -344,32 +392,96 @@ export default function ProductsAdminPage() {
         </CardContent>
       </Card>
 
-      {/* EDIT STOCK DIALOG */}
+      {/* EDIT PRODUCT DIALOG */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajustar Stock: {selectedProduct?.name}</DialogTitle>
+            <DialogTitle>Editar Producto</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Nuevo Stock total</Label>
+              <Label>Nombre</Label>
               <Input
-                type="number"
-                min="0"
-                value={editStockValue}
-                onChange={(e) => setEditStockValue(e.target.value)}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Ingresa la cantidad real que hay actualmente en el almacén o tienda para este producto.
-              </p>
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Precio (S/)</Label>
+                <Input
+                  type="number"
+                  step="0.10"
+                  min="0"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ajustar Stock</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editStockValue}
+                  onChange={(e) => setEditStockValue(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Categoría</Label>
+              <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                >
+                  <option value="" disabled>Seleccione...</option>
+                  {categories.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              (El emoji y estado visible pueden editarse desde el creador o switch)
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedProduct(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateStock} disabled={updateStockMutation.isPending}>
-              {updateStockMutation.isPending ? "Guardando..." : "Guardar stock"}
+            <Button onClick={handleUpdateProduct} disabled={updateProductMutation.isPending}>
+              {updateProductMutation.isPending ? "Guardando..." : "Guardar cambios"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CREATE CATEGORY DIALOG */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nueva Categoría</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nombre de Categoría</Label>
+              <Input
+                placeholder="Ej: Empanadas"
+                value={newCategoryLabel}
+                onChange={(e) => setNewCategoryLabel(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCategory} disabled={createCategoryMutation.isPending}>
+              {createCategoryMutation.isPending ? "Creando..." : "Crear Categoría"}
             </Button>
           </DialogFooter>
         </DialogContent>

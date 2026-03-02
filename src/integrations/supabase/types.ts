@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          id: string
+          product_id: string
+          user_id: string
+          quantity: number
+          type: "production" | "adjustment"
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          user_id: string
+          quantity: number
+          type: "production" | "adjustment"
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          user_id?: string
+          quantity?: number
+          type?: "production" | "adjustment"
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           id: string

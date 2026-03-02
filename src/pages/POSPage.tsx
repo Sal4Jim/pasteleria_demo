@@ -2,12 +2,17 @@ import React, { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { type Product, type CartItem } from "@/types/products";
 import { useProducts } from "@/hooks/useProducts";
+import { fetchCategories } from "@/services/categoriesService";
+import { useQuery } from "@tanstack/react-query";
 import { createOrder } from "@/services/ordersService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { Cart } from "@/components/pos/Cart";
 import { CheckoutModal } from "@/components/pos/CheckoutModal";
+import { RestockModal } from "@/components/pos/RestockModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { PackagePlus } from "lucide-react";
 
 const POSPage = () => {
   const { user } = useAuth();
@@ -15,6 +20,12 @@ const POSPage = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [restockOpen, setRestockOpen] = useState(false);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
 
   const addToCart = useCallback((product: Product) => {
     if (product.stock < 1) {
@@ -75,12 +86,18 @@ const POSPage = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       <div className="flex-1 min-w-0">
-        <div className="mb-6">
-          <h1 className="text-2xl font-display font-bold text-foreground">Punto de Venta</h1>
-          <p className="text-muted-foreground text-sm mt-1">Selecciona productos para agregar al pedido</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Punto de Venta</h1>
+            <p className="text-muted-foreground text-sm mt-1">Selecciona productos para agregar al pedido</p>
+          </div>
+          <Button variant="outline" onClick={() => setRestockOpen(true)} className="w-full sm:w-auto">
+            <PackagePlus className="mr-2 h-4 w-4" /> Ingresar Lote
+          </Button>
         </div>
         <ProductGrid
           products={filteredProducts}
+          categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           onAddToCart={addToCart}
@@ -114,6 +131,12 @@ const POSPage = () => {
           setCheckoutOpen(false);
           await refetch();
         }}
+      />
+      <RestockModal 
+        open={restockOpen}
+        onOpenChange={setRestockOpen}
+        products={products}
+        userId={user?.id || ""}
       />
     </div>
   );
