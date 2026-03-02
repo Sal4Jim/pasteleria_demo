@@ -155,7 +155,7 @@ const SettingsPage = () => {
     if (error || data?.error) {
       toast.error(data?.error || error?.message || "Error al eliminar vendedor");
     } else {
-      toast.success("Vendedor eliminado permanentemente");
+      toast.success("Vendedor desactivado exitosamente (Soft Delete)");
       setSelectedVendorForDelete(null);
       fetchVendors();
     }
@@ -321,10 +321,10 @@ const SettingsPage = () => {
       <AlertDialog open={!!selectedVendorForDelete} onOpenChange={(open) => !open && setSelectedVendorForDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar Vendedor?</AlertDialogTitle>
+            <AlertDialogTitle>¿Desactivar Vendedor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción es irreversible. Se eliminará el acceso para el vendedor{" "}
-              <strong>{selectedVendorForDelete?.full_name}</strong> y sus datos desaparecerán del sistema. Sus ventas seguirán registradas con su ID por seguridad.
+              Esta acción revocará su acceso al sistema y lo ocultará de la lista activa, pero 
+              sus ventas previas se conservarán intactas para los reportes (Soft Delete).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

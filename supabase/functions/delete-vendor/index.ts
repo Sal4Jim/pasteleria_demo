@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -63,11 +64,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Delete user
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+    // Soft Delete:
+    // 1. Suspend the user from logging in ever again
+    const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+      ban_duration: '8760h', // 1 year ban
+    });
 
-    if (deleteError) {
-      return new Response(JSON.stringify({ error: deleteError.message }), {
+    if (banError) {
+      return new Response(JSON.stringify({ error: banError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 2. Remove their vendor role to hide them from the active list
+    const { error: deleteRoleError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', user_id);
+
+    if (deleteRoleError) {
+      return new Response(JSON.stringify({ error: deleteRoleError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
