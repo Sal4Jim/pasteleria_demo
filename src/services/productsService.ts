@@ -1,6 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/products";
 
+type ProductRow = {
+  id: string;
+  name: string;
+  price: number | string;
+  category: string;
+  emoji: string;
+  active: boolean;
+  stock: number | string;
+  created_at: string;
+};
+
 export async function fetchActiveProducts(): Promise<Product[]> {
   const { data, error } = await supabase
     .from("products")
@@ -14,13 +25,15 @@ export async function fetchActiveProducts(): Promise<Product[]> {
   }
 
   // Map database fields to the Product interface
-  return (data || []).map((p) => ({
+  const rows = data as unknown as ProductRow[];
+  return rows.map((p) => ({
     id: p.id,
     name: p.name,
     price: Number(p.price),
     category: p.category,
     emoji: p.emoji,
     active: p.active,
+    stock: Number(p.stock) || 0,
     created_at: p.created_at,
   }));
 }
@@ -36,13 +49,15 @@ export async function fetchAllProducts(): Promise<Product[]> {
     throw error;
   }
 
-  return (data || []).map((p) => ({
+  const rows = data as unknown as ProductRow[];
+  return rows.map((p) => ({
     id: p.id,
     name: p.name,
     price: Number(p.price),
     category: p.category,
     emoji: p.emoji,
     active: p.active,
+    stock: Number(p.stock) || 0,
     created_at: p.created_at,
   }));
 }
@@ -55,7 +70,8 @@ export async function createProduct(product: Omit<Product, "id" | "created_at">)
       price: product.price,
       category: product.category,
       emoji: product.emoji,
-      active: product.active
+      active: product.active,
+      stock: product.stock
     }])
     .select()
     .single();
@@ -65,10 +81,12 @@ export async function createProduct(product: Omit<Product, "id" | "created_at">)
     throw error;
   }
 
+  const row = data as unknown as ProductRow;
   return {
-    ...data,
-    price: Number(data.price)
-  };
+    ...row,
+    price: Number(row.price),
+    stock: Number(row.stock) || 0
+  } as Product;
 }
 
 export async function updateProduct(id: string, updates: Partial<Omit<Product, "id" | "created_at">>): Promise<Product> {
@@ -84,8 +102,10 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, "
     throw error;
   }
 
+  const row = data as unknown as ProductRow;
   return {
-    ...data,
-    price: Number(data.price)
-  };
+    ...row,
+    price: Number(row.price),
+    stock: Number(row.stock) || 0
+  } as Product;
 }

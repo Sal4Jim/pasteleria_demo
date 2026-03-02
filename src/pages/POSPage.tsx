@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { toast } from "sonner";
 import { type Product, type CartItem } from "@/types/products";
 import { useProducts } from "@/hooks/useProducts";
 import { createOrder } from "@/services/ordersService";
@@ -10,15 +11,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const POSPage = () => {
   const { user } = useAuth();
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, refetch } = useProducts();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const addToCart = useCallback((product: Product) => {
+    if (product.stock < 1) {
+      toast.error("Producto agotado");
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        if (existing.quantity >= product.stock) {
+          toast.error(`Solo hay ${product.stock} unidades de ${product.name} disponibles.`);
+          return prev;
+        }
         return prev.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -28,13 +37,23 @@ const POSPage = () => {
   }, []);
 
   const updateQuantity = useCallback((id: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + delta } : item
+    setCart((prev) => {
+      const item = prev.find(i => i.id === id);
+      if (!item) return prev;
+      
+      const newQuantity = item.quantity + delta;
+      
+      if (delta > 0 && newQuantity > item.stock) {
+        toast.error(`Solo hay ${item.stock} unidades disponibles.`);
+        return prev;
+      }
+      
+      return prev
+        .map((i) =>
+          i.id === id ? { ...i, quantity: newQuantity } : i
         )
-        .filter((item) => item.quantity > 0)
-    );
+        .filter((i) => i.quantity > 0);
+    });
   }, []);
 
   const clearCart = useCallback(() => setCart([]), []);
@@ -93,6 +112,7 @@ const POSPage = () => {
           );
           clearCart();
           setCheckoutOpen(false);
+          await refetch();
         }}
       />
     </div>

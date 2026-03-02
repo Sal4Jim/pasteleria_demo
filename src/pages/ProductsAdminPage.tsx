@@ -16,7 +16,14 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { PackagePlus, PackageSearch, TrendingUp } from "lucide-react";
+import { PackagePlus, PackageSearch, TrendingUp, Edit2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchOrders } from "@/services/ordersService";
 
@@ -34,8 +41,13 @@ export default function ProductsAdminPage() {
   // Form state
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
   const [category, setCategory] = useState("cakes");
   const [emoji, setEmoji] = useState("🎂");
+
+  // Edit stock state
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editStockValue, setEditStockValue] = useState("");
 
   // Fetch all products
   const { data: products = [], isLoading } = useQuery({
@@ -74,6 +86,7 @@ export default function ProductsAdminPage() {
       toast.success("Producto creado exitosamente");
       setName("");
       setPrice("");
+      setStock("");
       setCategory("cakes");
       setEmoji("🎂");
     },
@@ -94,6 +107,19 @@ export default function ProductsAdminPage() {
     },
   });
 
+  const updateStockMutation = useMutation({
+    mutationFn: ({ id, stock }: { id: string; stock: number }) => updateProduct(id, { stock }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Stock actualizado exitosamente");
+      setSelectedProduct(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Error al actualizar stock");
+    },
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price || !category) {
@@ -103,9 +129,18 @@ export default function ProductsAdminPage() {
     createMutation.mutate({
       name,
       price: Number(price),
+      stock: Number(stock) || 0,
       category,
       emoji: emoji || "📦",
       active: true,
+    });
+  };
+
+  const handleUpdateStock = () => {
+    if (!selectedProduct || !editStockValue || isNaN(Number(editStockValue))) return;
+    updateStockMutation.mutate({
+      id: selectedProduct.id,
+      stock: Number(editStockValue),
     });
   };
 
@@ -184,6 +219,17 @@ export default function ProductsAdminPage() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Stock Inicial</Label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Categoría</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -249,7 +295,9 @@ export default function ProductsAdminPage() {
                     <TableHead>Nombre</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead className="text-right">Precio</TableHead>
-                    <TableHead className="text-center">Activo / Visible</TableHead>
+                    <TableHead className="text-center">Stock</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -262,6 +310,11 @@ export default function ProductsAdminPage() {
                       </TableCell>
                       <TableCell className="text-right">S/ {product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
+                        <span className={product.stock <= 0 ? "text-destructive font-bold" : "font-medium"}>
+                          {product.stock}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
                         <Switch
                           checked={product.active}
                           onCheckedChange={(checked) =>
@@ -269,6 +322,18 @@ export default function ProductsAdminPage() {
                           }
                           disabled={toggleStatusMutation.isPending}
                         />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setEditStockValue(product.stock.toString());
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4 text-primary" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -278,6 +343,37 @@ export default function ProductsAdminPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* EDIT STOCK DIALOG */}
+      <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajustar Stock: {selectedProduct?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nuevo Stock total</Label>
+              <Input
+                type="number"
+                min="0"
+                value={editStockValue}
+                onChange={(e) => setEditStockValue(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Ingresa la cantidad real que hay actualmente en el almacén o tienda para este producto.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedProduct(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateStock} disabled={updateStockMutation.isPending}>
+              {updateStockMutation.isPending ? "Guardando..." : "Guardar stock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

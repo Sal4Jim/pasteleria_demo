@@ -3,9 +3,10 @@ export interface Product {
   name: string;
   price: number;
   category: string;
-  emoji: string | null;
+  emoji: string;
   active: boolean;
-  created_at: string;
+  stock: number;
+  created_at?: string;
 }
 
 export interface CartItem extends Product {
