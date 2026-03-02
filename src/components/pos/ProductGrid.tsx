@@ -1,35 +1,40 @@
 import { type Product } from "@/types/products";
+import { type Category } from "@/types/categories";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const categories = [
-  { id: "all", label: "Todos" },
-  { id: "cakes", label: "Tortas" },
-  { id: "cupcakes", label: "Cupcakes" },
-  { id: "beverages", label: "Bebidas" },
-  { id: "custom", label: "Personalizado" },
-];
-
 interface ProductGridProps {
   products: Product[];
+  categories: Category[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onAddToCart: (product: Product) => void;
 }
 
-export function ProductGrid({ products, selectedCategory, onCategoryChange, onAddToCart }: ProductGridProps) {
+export function ProductGrid({ products, categories, selectedCategory, onCategoryChange, onAddToCart }: ProductGridProps) {
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
+        <Button
+          variant={selectedCategory === "all" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onCategoryChange("all")}
+          className={cn(
+            "rounded-full text-xs font-medium transition-all",
+            selectedCategory === "all" && "shadow-md"
+          )}
+        >
+          Todos
+        </Button>
         {categories.map((cat) => (
           <Button
-            key={cat.id}
-            variant={selectedCategory === cat.id ? "default" : "secondary"}
+            key={cat.slug}
+            variant={selectedCategory === cat.slug ? "default" : "secondary"}
             size="sm"
-            onClick={() => onCategoryChange(cat.id)}
+            onClick={() => onCategoryChange(cat.slug)}
             className={cn(
               "rounded-full text-xs font-medium transition-all",
-              selectedCategory === cat.id && "shadow-md"
+              selectedCategory === cat.slug && "shadow-md"
             )}
           >
             {cat.label}
