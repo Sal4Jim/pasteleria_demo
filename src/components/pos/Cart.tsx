@@ -1,4 +1,4 @@
-import { type CartItem } from "@/data/bakeryData";
+import { type CartItem } from "@/types/products";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 
@@ -36,7 +36,7 @@ export function Cart({ items, subtotal, tax, total, onUpdateQuantity, onClear, o
         ) : (
           items.map((item) => (
             <div key={item.id} className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
-              <span className="text-2xl">{item.image}</span>
+              <span className="text-2xl">{item.emoji || "🍞"}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{item.name}</p>
                 <p className="text-xs text-muted-foreground">S/ {item.price.toFixed(2)}</p>
@@ -71,7 +71,7 @@ export function Cart({ items, subtotal, tax, total, onUpdateQuantity, onClear, o
           <span>S/ {subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm text-muted-foreground">
-          <span>IGV (18%)</span>
+          <span>IGV (18% incl.)</span>
           <span>S/ {tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold text-foreground pt-2 border-t border-border">

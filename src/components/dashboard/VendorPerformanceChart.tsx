@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { OrderWithItems } from "@/hooks/useOrders";
+import type { OrderWithItems } from "@/types/orders";
 
 interface Props {
   orders: OrderWithItems[];

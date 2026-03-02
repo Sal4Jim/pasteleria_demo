@@ -11,14 +11,15 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { NavLink } from "@/components/NavLink";
-import { useAuth } from "@/context/AuthContext";
-import { ShoppingCart, LayoutDashboard, FileText, Settings, Cake, LogOut } from "lucide-react";
+import { NavLink } from "@/components/layout/NavLink";
+import { useAuth } from "@/contexts/AuthContext";
+import { ShoppingCart, LayoutDashboard, FileText, Settings, Cake, LogOut, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const adminItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Punto de Venta", url: "/pos", icon: ShoppingCart },
+  { title: "Productos", url: "/products", icon: PackageSearch },
   { title: "Reportes", url: "/reports", icon: FileText },
   { title: "Configuración", url: "/settings", icon: Settings },
 ];
