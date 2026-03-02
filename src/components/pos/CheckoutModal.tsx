@@ -23,21 +23,30 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
-  onConfirm: () => void;
+  onConfirm: (method: string, invoice: boolean) => Promise<void>;
 }
 
 export function CheckoutModal({ open, onOpenChange, total, onConfirm }: CheckoutModalProps) {
   const [method, setMethod] = useState<string>("cash");
   const [invoice, setInvoice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleConfirm = () => {
-    toast.success("¡Venta registrada exitosamente!", {
-      description: `Total: S/ ${total.toFixed(2)} — ${paymentMethods.find((m) => m.id === method)?.label}${invoice ? " (con factura)" : ""}`,
-      icon: <CheckCircle2 className="h-5 w-5" />,
-    });
-    onConfirm();
-    setMethod("cash");
-    setInvoice(false);
+  const handleConfirm = async () => {
+    try {
+      setIsSubmitting(true);
+      await onConfirm(method, invoice);
+      toast.success("¡Venta registrada exitosamente!", {
+        description: `Total: S/ ${total.toFixed(2)} — ${paymentMethods.find((m) => m.id === method)?.label}${invoice ? " (con factura)" : ""}`,
+        icon: <CheckCircle2 className="h-5 w-5" />,
+      });
+      setMethod("cash");
+      setInvoice(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al procesar la venta. Intente de nuevo.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,8 +98,8 @@ export function CheckoutModal({ open, onOpenChange, total, onConfirm }: Checkout
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} className="min-w-[120px]">
-            Confirmar Venta
+          <Button onClick={handleConfirm} className="min-w-[120px]" disabled={isSubmitting}>
+            {isSubmitting ? "Procesando..." : "Confirmar Venta"}
           </Button>
         </DialogFooter>
       </DialogContent>

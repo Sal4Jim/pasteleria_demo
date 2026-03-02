@@ -48,63 +48,33 @@ Deno.serve(async (req) => {
       .eq("role", "admin");
 
     if (!roles || roles.length === 0) {
-      return new Response(JSON.stringify({ error: "Solo administradores pueden crear vendedores" }), {
+      return new Response(JSON.stringify({ error: "Solo administradores pueden eliminar vendedores" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const reqBody = await req.json();
-    let email = reqBody.email;
-    const password = reqBody.password;
-    let full_name = reqBody.full_name;
+    const { user_id } = await req.json();
 
-    if (!email || !password || !full_name) {
-      return new Response(JSON.stringify({ error: "Email, contraseña y nombre son requeridos" }), {
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: "ID de usuario requerido" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    email = email.trim();
-    full_name = full_name.trim();
+    // Delete user
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
-    if (password.length < 6) {
-      return new Response(JSON.stringify({ error: "La contraseña debe tener al menos 6 caracteres" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Create user with admin API
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
-
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Assign vendor role
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newUser.user.id, role: "vendor" });
-
-    if (roleError) {
-      return new Response(JSON.stringify({ error: roleError.message }), {
+    if (deleteError) {
+      return new Response(JSON.stringify({ error: deleteError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUser.user.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: Error | unknown) {

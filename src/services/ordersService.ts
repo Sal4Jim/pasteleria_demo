@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { OrderWithItems } from "@/types/orders";
+import { OrderWithItems, OrderInsert, OrderItemInsert } from "@/types/orders";
+import { CartItem } from "@/types/products";
 
 export async function fetchOrders(): Promise<OrderWithItems[]> {
   const { data: orders, error } = await supabase
@@ -31,11 +32,67 @@ export async function fetchOrders(): Promise<OrderWithItems[]> {
     payment_method: o.payment_method,
     invoice: o.invoice,
     created_at: o.created_at,
-    items: (o.order_items || []).map((i: any) => ({
-      product_name: i.product_name,
-      quantity: i.quantity,
+    items: (o.order_items || []).map((i: Record<string, unknown>) => ({
+      product_name: String(i.product_name),
+      quantity: Number(i.quantity),
       unit_price: Number(i.unit_price),
       total_price: Number(i.total_price),
     })),
   }));
+}
+
+export async function createOrder(
+  vendorId: string,
+  cart: CartItem[],
+  subtotal: number,
+  tax: number,
+  total: number,
+  paymentMethod: string,
+  invoice: boolean
+) {
+  // 1. Insert order
+  const orderData: OrderInsert = {
+    vendor_id: vendorId,
+    subtotal,
+    tax,
+    total,
+    payment_method: paymentMethod,
+    invoice,
+  };
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert(orderData)
+    .select()
+    .single();
+
+  if (orderError) {
+    console.error("Error creating order:", orderError);
+    throw orderError;
+  }
+
+  if (!order) {
+    throw new Error("Order was not created");
+  }
+
+  // 2. Insert items
+  const itemsData: OrderItemInsert[] = cart.map((item) => ({
+    order_id: order.id,
+    product_id: item.id,
+    product_name: item.name,
+    quantity: item.quantity,
+    unit_price: item.price,
+    total_price: item.price * item.quantity,
+  }));
+
+  const { error: itemsError } = await supabase
+    .from("order_items")
+    .insert(itemsData);
+
+  if (itemsError) {
+    console.error("Error creating order items:", itemsError);
+    throw itemsError;
+  }
+
+  return order;
 }
