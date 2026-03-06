@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { N8nChatWidget } from "@/components/chat/N8nChatWidget";
 import DashboardPage from "./pages/DashboardPage";
 import POSPage from "./pages/POSPage";
 import ReportsPage from "./pages/ReportsPage";
@@ -63,6 +64,7 @@ function AppRoutes() {
 
   return (
     <AppLayout>
+      {role === "admin" && <N8nChatWidget />}
       <Routes>
         <Route
           path="/"
