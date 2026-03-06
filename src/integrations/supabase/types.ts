@@ -37,33 +37,41 @@ export type Database = {
       }
       inventory_movements: {
         Row: {
-          id: string
-          product_id: string
-          user_id: string
-          quantity: number
-          type: "production" | "adjustment"
-          notes: string | null
           created_at: string
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          type: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          product_id: string
-          user_id: string
-          quantity: number
-          type: "production" | "adjustment"
-          notes?: string | null
           created_at?: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          type: string
+          user_id: string
         }
         Update: {
-          id?: string
-          product_id?: string
-          user_id?: string
-          quantity?: number
-          type?: "production" | "adjustment"
-          notes?: string | null
           created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          type?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
